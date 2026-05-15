@@ -16,9 +16,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Lakshmi33923/capstone-project2.git',
-                    credentialsId: 'git-creds'
+                checkout scm
             }
         }
 
@@ -26,9 +24,8 @@ pipeline {
             steps {
                 sh '''
                 set -e
-
-                aws ecr get-login-password --region $AWS_REGION \
-                | docker login --username AWS --password-stdin $ECR_REPO
+                aws ecr get-login-password --region $AWS_REGION > /tmp/token
+                cat /tmp/token | docker login --username AWS --password-stdin $ECR_REPO
                 '''
             }
         }
@@ -36,21 +33,16 @@ pipeline {
         stage('Build Images') {
             steps {
                 sh '''
-                set -e
-
-                # Spring Boot
                 cd springapp/springapp
                 docker build -t $IMAGE_NAME_SPRING .
                 docker tag $IMAGE_NAME_SPRING:latest $ECR_REPO/$IMAGE_NAME_SPRING:latest
                 cd ../../
 
-                # Node
                 cd nodeapp
                 docker build -t $IMAGE_NAME_NODE .
                 docker tag $IMAGE_NAME_NODE:latest $ECR_REPO/$IMAGE_NAME_NODE:latest
                 cd ../
 
-                # FastAPI
                 cd fastapi_app
                 docker build -t $IMAGE_NAME_FASTAPI .
                 docker tag $IMAGE_NAME_FASTAPI:latest $ECR_REPO/$IMAGE_NAME_FASTAPI:latest
@@ -62,8 +54,6 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 sh '''
-                set -e
-
                 docker push $ECR_REPO/$IMAGE_NAME_SPRING:latest
                 docker push $ECR_REPO/$IMAGE_NAME_NODE:latest
                 docker push $ECR_REPO/$IMAGE_NAME_FASTAPI:latest
@@ -74,8 +64,6 @@ pipeline {
         stage('Deploy to EC2 (SSM)') {
             steps {
                 sh '''
-                set -e
-
                 aws ssm send-command \
                 --instance-ids "$EC2_INSTANCE_ID" \
                 --region "$AWS_REGION" \
@@ -98,5 +86,6 @@ pipeline {
                 '''
             }
         }
+
     }
 }
