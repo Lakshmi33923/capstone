@@ -25,9 +25,14 @@ pipeline {
         sh '''
         set -e
 
-        AWS_TOKEN=$(aws ecr get-login-password --region ap-south-1)
+        export AWS_PAGER=""
 
-        echo "$AWS_TOKEN" | docker login --username AWS --password-stdin 364807861242.dkr.ecr.ap-south-1.amazonaws.com
+        aws ecr get-login-password \
+            --region ap-south-1 \
+            --no-cli-pager \
+            --output text > /tmp/token
+
+        cat /tmp/token | docker login --username AWS --password-stdin 364807861242.dkr.ecr.ap-south-1.amazonaws.com
         '''
     }
 }
