@@ -23,13 +23,10 @@ pipeline {
         stage('Login to ECR') {
     steps {
         sh '''
-        set -e
-        aws ecr get-login-password --region ap-south-1 --no-cli-pager > /tmp/token
-        cat /tmp/token | docker login --username AWS --password-stdin 364807861242.dkr.ecr.ap-south-1.amazonaws.com
+        aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 364807861242.dkr.ecr.ap-south-1.amazonaws.com
         '''
     }
 }
-
         stage('Build Images') {
             steps {
                 sh '''
